@@ -1,0 +1,47 @@
+name: Code_Checks
+
+on:
+  pull_request: null
+  push:
+    branches:
+      - master
+
+jobs:
+  php5-test:
+    runs-on: ubuntu-latest
+    name: PHP 5.6 tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 5.6
+          coverage: none # disable xdebug, pcov
+
+      - run: composer remove --dev -n phpstan/phpstan phpstan/phpstan-phpunit
+      - run: composer install --no-progress
+      - run: composer test
+
+  php7-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.2', '7.4']
+
+    name: PHP ${{ matrix.php }} tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none # disable xdebug, pcov
+
+      - run: composer install --no-progress
+      - run: vendor/bin/phpstan analyse -c phpstan.neon
+      - run: vendor/bin/phpstan analyse -c phpstan-tests.neon
+      - run: composer test
